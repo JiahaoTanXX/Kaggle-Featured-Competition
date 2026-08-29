@@ -1,0 +1,42 @@
+{
+  "rule_baseline": {
+    "target_tiles": 16,
+    "hire_target": 4,
+    "enable_market": true,
+    "opponent_aware": false,
+    "enable_task_scheduler": true,
+    "enable_value_model": false
+  },
+  "dynamic_market": {
+    "target_tiles": 20,
+    "hire_target": 6,
+    "enable_market": true,
+    "opponent_aware": false,
+    "enable_task_scheduler": true,
+    "enable_value_model": false
+  },
+  "opponent_aware": {
+    "target_tiles": 20,
+    "hire_target": 6,
+    "enable_market": true,
+    "opponent_aware": true,
+    "enable_task_scheduler": true,
+    "enable_value_model": false
+  },
+  "lightweight_value": {
+    "target_tiles": 20,
+    "hire_target": 6,
+    "enable_market": true,
+    "opponent_aware": true,
+    "enable_task_scheduler": true,
+    "enable_value_model": true
+  },
+  "scheduler_off_control": {
+    "target_tiles": 20,
+    "hire_target": 6,
+    "enable_market": true,
+    "opponent_aware": true,
+    "enable_task_scheduler": false,
+    "enable_value_model": false
+  }
+}

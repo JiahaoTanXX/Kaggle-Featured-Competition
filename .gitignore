@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.pyc
+artifacts/
+replays/
+reports/generated/
+submission.tar.gz

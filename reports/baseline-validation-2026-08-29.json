@@ -1,0 +1,40 @@
+{
+  "run_date": "2026-08-29",
+  "environment": {
+    "python": "3.13.11",
+    "kaggle_environments": "1.32.7",
+    "episode_steps": 720
+  },
+  "tests": {
+    "count": 5,
+    "passed": 5
+  },
+  "full_match": {
+    "opponent": "starter",
+    "seed": 20260829,
+    "reward": 11408.0,
+    "opponent_reward": 3262.0,
+    "margin": 8146.0,
+    "status": "DONE",
+    "final_unsold_inventory": 0,
+    "final_weeds": 0
+  },
+  "official_baseline_tournament": {
+    "opponents": ["pass", "random", "starter"],
+    "seeds": [20260829, 20260830],
+    "both_seats": true,
+    "games": 12,
+    "wins": 12,
+    "mean_margin": 9663.583333333334,
+    "margin_stdev": 1738.6406632943467,
+    "all_completed": true
+  },
+  "ablations_vs_starter": {
+    "rule_baseline": {"games": 4, "win_rate": 1.0, "mean_margin": 8134.0},
+    "dynamic_market": {"games": 4, "win_rate": 1.0, "mean_margin": 8692.75},
+    "opponent_aware": {"games": 4, "win_rate": 1.0, "mean_margin": 8692.75},
+    "lightweight_value": {"games": 4, "win_rate": 1.0, "mean_margin": 8692.75},
+    "scheduler_off_control": {"games": 4, "win_rate": 0.0, "mean_margin": -1399.5}
+  },
+  "interpretation": "Engineering baseline only. These local results do not imply online leaderboard rank."
+}

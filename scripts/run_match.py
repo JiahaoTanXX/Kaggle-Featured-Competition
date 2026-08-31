@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from kaggle_environments import make  # noqa: E402
+from src.kaggriculture_agent.planner import finalize_planner_diagnostics  # noqa: E402
 from src.kaggriculture_agent.replay import summarize_replay  # noqa: E402
 
 
@@ -33,7 +34,13 @@ def main() -> None:
     summary_path = args.output.with_suffix(".summary.json")
     summary = summarize_replay(replay, 0)
     summary_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
+    planner_summary_path = args.output.with_suffix(".planner.json")
+    planner_summary = finalize_planner_diagnostics(0, emit=False)
+    planner_summary_path.write_text(
+        json.dumps(planner_summary, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     print(json.dumps(summary, ensure_ascii=False, indent=2))
+    print(f"Planner diagnostics: {planner_summary_path}")
 
 
 if __name__ == "__main__":

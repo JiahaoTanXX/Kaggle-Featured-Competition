@@ -111,6 +111,13 @@ class PlannerDiagnosticsTests(unittest.TestCase):
         self.assertEqual(summary["worker_stats"]["1"]["action_count"], 1)
         self.assertEqual(summary["remaining_tasks_by_step"][0]["remaining_after_assignment"], 1)
         self.assertEqual(summary["remaining_tasks_by_step"][0]["unexecuted_count"], 2)
+        self.assertEqual(summary["remaining_tasks_by_step"][0]["movement_distance"], 1)
+        self.assertEqual(summary["remaining_tasks_by_step"][0]["productive_actions"], 1)
+        self.assertEqual(summary["remaining_tasks_by_step"][0]["pass_actions"], 0)
+        step_reasons = summary["remaining_tasks_by_step"][0]["task_distribution_by_reason"]
+        self.assertEqual(step_reasons["daily_water"]["appearances"], 1)
+        self.assertEqual(step_reasons["daily_water"]["selected"], 1)
+        self.assertEqual(step_reasons["clear_weed"]["executed"], 1)
         self.assertEqual(
             summary["task_distribution_by_reason"]["daily_water"]["average_priority"],
             80.0,

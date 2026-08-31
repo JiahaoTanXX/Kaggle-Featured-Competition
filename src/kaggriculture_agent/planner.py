@@ -62,24 +62,45 @@ class PlannerDiagnostics:
             self.worker_stats[worker_id] = WorkerDiagnostics()
         return self.worker_stats[worker_id]
 
-    def record_task_pool(self, tasks: list[Task]) -> None:
+    def record_task_pool(self, tasks: list[Task]) -> dict[str, ReasonDiagnostics]:
+        step_stats: dict[str, ReasonDiagnostics] = {}
         for task in tasks:
             stats = self.reason(task.reason)
             stats.appearances += 1
             stats.priority_total += task.priority
             self.total_task_appearances += 1
+            current = step_stats.setdefault(task.reason, ReasonDiagnostics())
+            current.appearances += 1
+            current.priority_total += task.priority
+        return step_stats
 
-    def record_assignment(self, task: Task, distance: int, moved: bool) -> None:
+    def record_assignment(
+        self,
+        task: Task,
+        distance: int,
+        moved: bool,
+        step_stats: dict[str, ReasonDiagnostics] | None = None,
+    ) -> None:
         stats = self.reason(task.reason)
         stats.selected += 1
         stats.assigned_manhattan_distance += distance
         if moved:
             stats.movement_steps += 1
         self.total_selected_tasks += 1
+        if step_stats is not None:
+            current = step_stats.setdefault(task.reason, ReasonDiagnostics())
+            current.selected += 1
+            current.assigned_manhattan_distance += distance
+            if moved:
+                current.movement_steps += 1
 
-    def record_execution(self, task: Task) -> None:
+    def record_execution(
+        self, task: Task, step_stats: dict[str, ReasonDiagnostics] | None = None
+    ) -> None:
         self.reason(task.reason).executed += 1
         self.total_executed_tasks += 1
+        if step_stats is not None:
+            step_stats.setdefault(task.reason, ReasonDiagnostics()).executed += 1
 
     def record_worker_action(self, worker_id: int, action: list[Any]) -> None:
         stats = self.worker(worker_id)
@@ -100,7 +121,10 @@ class PlannerDiagnostics:
         executed_count: int,
         remaining_count: int,
         idle_workers: int,
+        actions: list[list[Any]],
+        task_stats: dict[str, ReasonDiagnostics],
     ) -> None:
+        ops = [str(action[0]) if action else "PASS" for action in actions]
         self.remaining_tasks_by_step.append(
             {
                 "step": snapshot.step,
@@ -111,6 +135,14 @@ class PlannerDiagnostics:
                 "executed_count": executed_count,
                 "remaining_after_assignment": remaining_count,
                 "unexecuted_count": max(0, task_count - executed_count),
+                "worker_count": len(actions),
+                "movement_distance": sum(op in MOVE_ACTIONS for op in ops),
+                "productive_actions": sum(op not in MOVE_ACTIONS and op != "PASS" for op in ops),
+                "pass_actions": sum(op == "PASS" for op in ops),
+                "idle_workers": idle_workers,
+                "task_distribution_by_reason": {
+                    reason: asdict(stats) for reason, stats in sorted(task_stats.items())
+                },
             }
         )
         day_stats = self.daily_idle.setdefault(
@@ -204,7 +236,12 @@ def finalize_planner_diagnostics(player: int = 0, emit: bool = True) -> dict[str
     diagnostics = _DIAGNOSTICS_BY_PLAYER.get(player)
     summary = get_planner_diagnostics_summary(player)
     if emit and diagnostics is not None and not diagnostics.emitted:
-        print("KAGGRICULTURE_PLANNER_SUMMARY " + json.dumps(summary, sort_keys=True))
+        emitted_summary = {
+            key: value
+            for key, value in summary.items()
+            if key not in {"remaining_tasks_by_step", "daily_idle_workers"}
+        }
+        print("KAGGRICULTURE_PLANNER_SUMMARY " + json.dumps(emitted_summary, sort_keys=True))
         diagnostics.emitted = True
     return summary
 
@@ -274,12 +311,13 @@ def assign_actions(snapshot: Snapshot, tasks: list[Task]) -> tuple[list[list[Any
     reasons: list[str] = []
     plant_budget = Counter(snapshot.seeds)
     diagnostics = _diagnostics_for(snapshot)
+    step_task_stats: dict[str, ReasonDiagnostics] = {}
     assigned_count = 0
     executed_count = 0
     idle_workers = 0
     if diagnostics is not None:
         try:
-            diagnostics.record_task_pool(tasks)
+            step_task_stats = diagnostics.record_task_pool(tasks)
         except Exception:
             diagnostics = None
 
@@ -304,7 +342,9 @@ def assign_actions(snapshot: Snapshot, tasks: list[Task]) -> tuple[list[list[Any
         distance = manhattan(pos, best.pos)
         if diagnostics is not None:
             try:
-                diagnostics.record_assignment(best, distance, pos != best.pos)
+                diagnostics.record_assignment(
+                    best, distance, pos != best.pos, step_stats=step_task_stats
+                )
             except Exception:
                 pass
         if pos != best.pos:
@@ -336,7 +376,7 @@ def assign_actions(snapshot: Snapshot, tasks: list[Task]) -> tuple[list[list[Any
         executed_count += 1
         if diagnostics is not None:
             try:
-                diagnostics.record_execution(best)
+                diagnostics.record_execution(best, step_stats=step_task_stats)
                 diagnostics.record_worker_action(worker_id, actions[-1])
             except Exception:
                 pass
@@ -350,6 +390,8 @@ def assign_actions(snapshot: Snapshot, tasks: list[Task]) -> tuple[list[list[Any
                 executed_count=executed_count,
                 remaining_count=len(remaining),
                 idle_workers=idle_workers,
+                actions=actions,
+                task_stats=step_task_stats,
             )
             # A 720-step Kaggle episode's final policy observation is step 718
             # (day 29, hour 22); the environment owns the terminal transition.
